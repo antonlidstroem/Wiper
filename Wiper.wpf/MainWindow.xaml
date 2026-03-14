@@ -22,8 +22,10 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,15">
-
+        <StackPanel Grid.Row="0" Margin="0,0,0,15" Background="White">
+            <Image Source="Resources/Images/wiper-logo.png"
+                Width="120"
+                Height="120"/>
             <TextBlock Text="Solution Path (.sln)" FontWeight="Bold" Margin="0,0,0,5"/>
             <DockPanel>
                 <Button Content="Skanna mappar" Command="{Binding ScanCommand}" 
@@ -60,9 +62,7 @@
                     Command="{Binding CleanCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
                     Background="#007ACC" Foreground="White" FontWeight="Bold" Padding="20,5"/>
 
-            <Image Source="Resources/Images/wiper-logo.png"
-               Width="50"
-               Height="50"/>
+            
 
         </StatusBar>
 
