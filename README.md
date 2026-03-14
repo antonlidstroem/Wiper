@@ -37,6 +37,12 @@ git clone https://github.com/yourusername/Wiper.wpf.git
    * Restart Visual Studio automatically (optional).
 6. Monitor the process in the log panel.
 
+## Screenshot
+
+Here is a screenshot of Wiper in action:
+
+![Wiper Screenshot](Wiper.wpf/Resources/Assets/wiper-screenshot.png)
+
 ## Safety
 
 * Only `bin` and `obj` folders are deleted.
