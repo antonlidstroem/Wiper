@@ -1,15 +1,42 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
 	<PropertyGroup>
 		<OutputType>WinExe</OutputType>
 		<TargetFramework>net9.0-windows</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<UseWPF>true</UseWPF>
-		<ApplicationIcon />
+
+		<!-- Sätt exe/skrivbordsikon -->
+		<ApplicationIcon>Resources\Assets\appicon.ico</ApplicationIcon>
 	</PropertyGroup>
 
+	<ItemGroup>
+	  <Compile Remove="Assets\**" />
+	  <EmbeddedResource Remove="Assets\**" />
+	  <None Remove="Assets\**" />
+	  <Page Remove="Assets\**" />
+	</ItemGroup>
+
+	<!-- Paketreferenser -->
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
 		<PackageReference Include="Microsoft.VisualStudio.Interop" Version="17.9.37000" />
 	</ItemGroup>
+
+	<!-- PNG-bilder som används i UI -->
+	<ItemGroup>
+		<Resource Include="Resources\Assets\appicon.ico">
+		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+		</Resource>
+		<Resource Include="Resources\Images\wiper-logo.png" />
+	</ItemGroup>
+
+	<!-- Mappen för ikonen -->
+
+	<!-- Valfritt: andra resurser -->
+	<ItemGroup>
+		<Folder Include="Resources\Images\" />
+	</ItemGroup>
+
 </Project>

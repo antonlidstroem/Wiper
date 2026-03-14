@@ -18,9 +18,15 @@ namespace Wiper.wpf.Services
                 var root = Path.GetDirectoryName(solutionPath);
                 if (string.IsNullOrEmpty(root)) return new List<ProjectFolder>();
 
-                var targets = new[] { "bin", "obj" };
                 return Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories)
-                    .Where(d => targets.Contains(Path.GetFileName(d).ToLower()))
+                    .Where(d =>
+                    {
+                        var name = Path.GetFileName(d).ToLower();
+                        // Kolla att det är bin eller obj OCH att det finns ett .csproj i samma projektmapp
+                        var parent = Directory.GetParent(d)?.FullName;
+                        bool hasCsproj = parent != null && Directory.EnumerateFiles(parent, "*.csproj").Any();
+                        return (name == "bin" || name == "obj") && hasCsproj;
+                    })
                     .Select(d => new ProjectFolder { Name = Path.GetFileName(d), FullPath = d })
                     .ToList();
             });

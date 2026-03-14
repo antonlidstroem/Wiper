@@ -1,7 +1,8 @@
-﻿using System.Globalization;
+﻿using System;
+using System.Globalization;
 using System.Windows.Data;
 
-namespace Wiper.wpf.Converters;
+namespace Wiper.wpf.Converters; // Kontrollera att detta matchar xmlns:conv i XAML
 
 public class InverseBooleanConverter : IValueConverter
 {

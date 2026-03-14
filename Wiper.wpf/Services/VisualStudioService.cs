@@ -3,6 +3,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using EnvDTE;
 using EnvDTE80;
+using Process = System.Diagnostics.Process;
 
 namespace Wiper.wpf.Services;
 
