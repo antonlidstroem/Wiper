@@ -1,4 +1,4 @@
-![Wiper logo](Wiper.wpf/Resources/Assets/app icon.ico)
+![Wiper logo](Wiper.wpf/Resources/Assets/appicon.ico)
 
 
 # Wiper
