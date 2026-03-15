@@ -1,3 +1,6 @@
+![Wiper logo](Wiper.wpf/Resources/Assets/app icon.ico)
+
+
 # Wiper
 
 **Wiper** is a lightweight Windows WPF application designed to clean up Visual Studio solutions. It automates the removal of `bin` and `obj` folders, saves all files, and optionally restarts Visual Studio, providing a faster way to reset project builds.
