@@ -11,7 +11,7 @@ namespace Wiper.wpf.Services
 
     public class FileService
     {
-        public async Task<List<ProjectFolder>> ScanFoldersAsync(string solutionPath)
+        public async Task<List<ProjectFolder>> ScanFoldersAsync(string solutionPath, List<string> targetFolders)
         {
             return await Task.Run(() =>
             {
@@ -22,14 +22,41 @@ namespace Wiper.wpf.Services
                     .Where(d =>
                     {
                         var name = Path.GetFileName(d).ToLower();
-                        // Kolla att det är bin eller obj OCH att det finns ett .csproj i samma projektmapp
-                        var parent = Directory.GetParent(d)?.FullName;
-                        bool hasCsproj = parent != null && Directory.EnumerateFiles(parent, "*.csproj").Any();
-                        return (name == "bin" || name == "obj") && hasCsproj;
+                        // Kolla om mappen finns i vår valda lista (t.ex. bin, obj, .vs)
+                        return targetFolders.Contains(name);
                     })
-                    .Select(d => new ProjectFolder { Name = Path.GetFileName(d), FullPath = d })
+                    .Select(d =>
+                    {
+                        long size = GetDirectorySize(d);
+                        return new ProjectFolder
+                        {
+                            Name = Path.GetFileName(d),
+                            FullPath = d,
+                            SizeInBytes = size,
+                            SizeDisplay = FormatSize(size)
+                        };
+                    })
                     .ToList();
             });
+        }
+
+        private long GetDirectorySize(string path)
+        {
+            try
+            {
+                return Directory.EnumerateFiles(path, "*", SearchOption.AllDirectories)
+                                .Sum(f => new FileInfo(f).Length);
+            }
+            catch { return 0; }
+        }
+
+        private string FormatSize(long bytes)
+        {
+            string[] Suffix = { "B", "KB", "MB", "GB", "TB" };
+            int i;
+            double dblSByte = bytes;
+            for (i = 0; i < Suffix.Length && bytes >= 1024; i++, bytes /= 1024) dblSByte = bytes / 1024.0;
+            return $"{dblSByte:0.##} {Suffix[i]}";
         }
 
         // Uppdaterad metod i FileService.cs

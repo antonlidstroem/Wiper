@@ -48,6 +48,7 @@
                         </GridViewColumn>
                         <GridViewColumn Header="Typ" DisplayMemberBinding="{Binding Name}" Width="60"/>
                         <GridViewColumn Header="Sökväg" DisplayMemberBinding="{Binding FullPath}" Width="500"/>
+                        <GridViewColumn Header="Storlek" DisplayMemberBinding="{Binding SizeDisplay}" Width="80"/>
                     </GridView>
                 </ListView.View>
             </ListView>
@@ -74,5 +75,43 @@
         <Grid Grid.RowSpan="4" Background="#88FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">
             <ProgressBar IsIndeterminate="True" Width="200" Height="20"/>
         </Grid>
+
+
+        <StackPanel Orientation="Horizontal" Margin="0,5">
+            <TextBlock Text="Inkludera: " VerticalAlignment="Center" FontWeight="Bold"/>
+            <ItemsControl ItemsSource="{Binding FolderTypeOptions}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="10,0"/>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <GridView>
+            <GridViewColumn Header="Val">
+                <GridViewColumn.CellTemplate>
+                    <DataTemplate>
+                        <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
+                    </DataTemplate>
+                </GridViewColumn.CellTemplate>
+            </GridViewColumn>
+            <GridViewColumn Header="Typ" DisplayMemberBinding="{Binding Name}" Width="60"/>
+            <GridViewColumn Header="Storlek" DisplayMemberBinding="{Binding SizeDisplay}" Width="80"/>
+            <GridViewColumn Header="Sökväg" DisplayMemberBinding="{Binding FullPath}" Width="400"/>
+        </GridView>
+
+        <StatusBarItem HorizontalAlignment="Right">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Total vinst: " FontWeight="Bold"/>
+                <TextBlock Text="{Binding TotalSizeDisplay}" Foreground="#007ACC" FontWeight="Bold" Margin="0,0,10,0"/>
+            </StackPanel>
+        </StatusBarItem>
+
     </Grid>
 </Window>

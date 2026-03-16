@@ -17,6 +17,15 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _status = "Redo";
     [ObservableProperty] private bool _isDryRun = true; // Standardvärde: På (säkert)
+    [ObservableProperty] private string _totalSizeDisplay = "0 B";
+
+    public ObservableCollection<FolderOption> FolderTypeOptions { get; } = new()
+{
+    new FolderOption("bin", true),
+    new FolderOption("obj", true),
+    new (".vs", false),
+    new ("TestResults", false)
+};
 
     public ObservableCollection<ProjectFolder> Folders { get; } = [];
     public ObservableCollection<string> Logs { get; } = [];
@@ -27,10 +36,33 @@ public partial class MainViewModel : ObservableObject
         if (!File.Exists(SolutionPath)) return;
         IsBusy = true;
         Folders.Clear();
-        var result = await _fileService.ScanFoldersAsync(SolutionPath);
-        foreach (var f in result) Folders.Add(f);
+
+        var targets = FolderTypeOptions.Where(o => o.IsChecked).Select(o => o.Name.ToLower()).ToList();
+        var result = await _fileService.ScanFoldersAsync(SolutionPath, targets);
+
+        foreach (var f in result)
+        {
+            // Prenumerera på ändringar så vi kan uppdatera totalen live
+            f.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(ProjectFolder.IsSelected)) UpdateTotalSize(); };
+            Folders.Add(f);
+        }
+
+        UpdateTotalSize();
         Status = $"Hittade {Folders.Count} mappar.";
         IsBusy = false;
+    }
+
+    private void UpdateTotalSize()
+    {
+        long total = Folders.Where(f => f.IsSelected).Sum(f => f.SizeInBytes);
+        TotalSizeDisplay = FormatSize(total); // Återanvänd FormatSize-logiken här eller i en helper
+    }
+
+    // En enkel klass för checkboxarna (lägg längst ner i filen eller i en egen fil)
+    public class FolderOption(string name, bool isChecked) : ObservableObject
+    {
+        public string Name { get; } = name;
+        public bool IsChecked { get; set; } = isChecked;
     }
 
     [RelayCommand]
