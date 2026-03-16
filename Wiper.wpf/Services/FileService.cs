@@ -32,12 +32,19 @@ namespace Wiper.wpf.Services
             });
         }
 
-        public async Task DeleteFoldersAsync(IEnumerable<ProjectFolder> folders, Action<string> logger)
+        // Uppdaterad metod i FileService.cs
+        public async Task DeleteFoldersAsync(IEnumerable<ProjectFolder> folders, Action<string> logger, bool isDryRun)
         {
             await Task.Run(() =>
             {
                 foreach (var folder in folders)
                 {
+                    if (isDryRun)
+                    {
+                        logger($"[DRY RUN] Skulle ha raderat: {folder.FullPath}");
+                        continue;
+                    }
+
                     try
                     {
                         if (Directory.Exists(folder.FullPath))

@@ -15,24 +15,53 @@ public class VisualStudioService
     [DllImport("ole32.dll")]
     private static extern int CreateBindCtx(int reserved, out IBindCtx ppbc);
 
-    public async Task CleanAndCloseAsync(string solutionPath, Action<string> logger)
+    public async Task<bool> CleanAndCloseAsync(string solutionPath, Action<string> logger)
     {
         DTE2? dte = GetDTE(solutionPath);
-        if (dte == null) return;
+        if (dte == null)
+        {
+            logger("VS: Lösningen hittades inte i någon öppen Visual Studio-instans. Går vidare till radering.");
+            return true;
+        }
 
-        await Task.Run(() =>
+        return await Task.Run(() =>
         {
             try
             {
                 logger("VS: Sparar alla filer...");
                 dte.ExecuteCommand("File.SaveAll");
-                logger("VS: Rensar lösning (Clean)...");
+
+                logger("VS: Kör Clean Solution...");
+                // true betyder att vi väntar tills clean är klar
                 dte.Solution.SolutionBuild.Clean(true);
+
                 logger("VS: Stänger ner...");
+                int processId = GetVsProcessId(dte);
                 dte.Quit();
+
+                // Vänta på att processen faktiskt dör så att fil-låsen släpps
+                if (processId > 0)
+                {
+                    var vsProcess = Process.GetProcessById(processId);
+                    logger("Väntar på att processen avslutas...");
+                    vsProcess.WaitForExit(10000); // Max 10 sekunder
+                }
+
+                return true;
             }
-            catch (Exception ex) { logger($"VS Fel: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                logger($"VS Fel: {ex.Message}");
+                return false;
+            }
         });
+    }
+
+    // Hjälpmetod för att hitta rätt process
+    private int GetVsProcessId(DTE2 dte)
+    {
+        try { return Process.GetProcessesByName("devenv").FirstOrDefault(p => p.MainWindowTitle.Contains(Path.GetFileNameWithoutExtension(dte.Solution.FullName)))?.Id ?? 0; }
+        catch { return 0; }
     }
 
     public void Restart(string path) =>

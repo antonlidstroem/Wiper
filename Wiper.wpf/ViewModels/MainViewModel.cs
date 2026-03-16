@@ -16,6 +16,7 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _solutionPath = string.Empty;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _status = "Redo";
+    [ObservableProperty] private bool _isDryRun = true; // Standardvärde: På (säkert)
 
     public ObservableCollection<ProjectFolder> Folders { get; } = [];
     public ObservableCollection<string> Logs { get; } = [];
@@ -38,14 +39,40 @@ public partial class MainViewModel : ObservableObject
         var selected = Folders.Where(f => f.IsSelected).ToList();
         if (!selected.Any()) return;
 
-        if (MessageBox.Show("Vill du rensa och starta om VS?", "Wiper", MessageBoxButton.YesNo) != MessageBoxResult.Yes) return;
+        // Om det inte är dry run, fråga om bekräftelse
+        if (!IsDryRun)
+        {
+            if (MessageBox.Show("Vill du rensa på riktigt och starta om VS?", "Wiper", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
+                return;
+        }
 
         IsBusy = true;
-        await _vsService.CleanAndCloseAsync(SolutionPath, Log);
-        await _fileService.DeleteFoldersAsync(selected, Log);
-        _vsService.Restart(SolutionPath);
+
+        // Kör VS-rensning/stängning ENDAST om det inte är en simulering
+        if (!IsDryRun)
+        {
+            await _vsService.CleanAndCloseAsync(SolutionPath, Log);
+        }
+        else
+        {
+            Log("--- STARTAR SIMULERING ---");
+        }
+
+        // Skicka med IsDryRun till FileService
+        await _fileService.DeleteFoldersAsync(selected, Log, IsDryRun);
+
+        // Starta om VS endast om vi faktiskt stängde det
+        if (!IsDryRun)
+        {
+            _vsService.Restart(SolutionPath);
+            Log("Klar och omstartad!");
+        }
+        else
+        {
+            Log("--- SIMULERING KLAR ---");
+        }
+
         IsBusy = false;
-        Log("Klar!");
     }
 
     private void Log(string msg) =>
