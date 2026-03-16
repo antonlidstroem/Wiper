@@ -16,16 +16,16 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty] private string _solutionPath = string.Empty;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private string _status = "Redo";
-    [ObservableProperty] private bool _isDryRun = true; // Standardvärde: På (säkert)
+    [ObservableProperty] private bool _isDryRun = true;
     [ObservableProperty] private string _totalSizeDisplay = "0 B";
 
     public ObservableCollection<FolderOption> FolderTypeOptions { get; } = new()
-{
-    new FolderOption("bin", true),
-    new FolderOption("obj", true),
-    new (".vs", false),
-    new ("TestResults", false)
-};
+    {
+        new FolderOption("bin", true),
+        new FolderOption("obj", true),
+        new (".vs", false),
+        new ("TestResults", false)
+    };
 
     public ObservableCollection<ProjectFolder> Folders { get; } = [];
     public ObservableCollection<string> Logs { get; } = [];
@@ -42,8 +42,10 @@ public partial class MainViewModel : ObservableObject
 
         foreach (var f in result)
         {
-            // Prenumerera på ändringar så vi kan uppdatera totalen live
-            f.PropertyChanged += (s, e) => { if (e.PropertyName == nameof(ProjectFolder.IsSelected)) UpdateTotalSize(); };
+            f.PropertyChanged += (s, e) =>
+            {
+                if (e.PropertyName == nameof(ProjectFolder.IsSelected)) UpdateTotalSize();
+            };
             Folders.Add(f);
         }
 
@@ -55,23 +57,24 @@ public partial class MainViewModel : ObservableObject
     private void UpdateTotalSize()
     {
         long total = Folders.Where(f => f.IsSelected).Sum(f => f.SizeInBytes);
-        TotalSizeDisplay = FormatSize(total); // Återanvänd FormatSize-logiken här eller i en helper
+        TotalSizeDisplay = FormatSize(total);
     }
 
-    // En enkel klass för checkboxarna (lägg längst ner i filen eller i en egen fil)
-    public class FolderOption(string name, bool isChecked) : ObservableObject
+    private string FormatSize(long bytes)
     {
-        public string Name { get; } = name;
-        public bool IsChecked { get; set; } = isChecked;
+        string[] Suffix = { "B", "KB", "MB", "GB", "TB" };
+        int i;
+        double dblSByte = bytes;
+        for (i = 0; i < Suffix.Length && bytes >= 1024; i++, bytes /= 1024) dblSByte = bytes / 1024.0;
+        return $"{dblSByte:0.##} {Suffix[i]}";
     }
 
     [RelayCommand]
     private async Task CleanAsync()
     {
         var selected = Folders.Where(f => f.IsSelected).ToList();
-        if (!selected.Any()) return;
+        if (selected.Count == 0) return;
 
-        // Om det inte är dry run, fråga om bekräftelse
         if (!IsDryRun)
         {
             if (MessageBox.Show("Vill du rensa på riktigt och starta om VS?", "Wiper", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
@@ -80,7 +83,6 @@ public partial class MainViewModel : ObservableObject
 
         IsBusy = true;
 
-        // Kör VS-rensning/stängning ENDAST om det inte är en simulering
         if (!IsDryRun)
         {
             await _vsService.CleanAndCloseAsync(SolutionPath, Log);
@@ -90,10 +92,8 @@ public partial class MainViewModel : ObservableObject
             Log("--- STARTAR SIMULERING ---");
         }
 
-        // Skicka med IsDryRun till FileService
         await _fileService.DeleteFoldersAsync(selected, Log, IsDryRun);
 
-        // Starta om VS endast om vi faktiskt stängde det
         if (!IsDryRun)
         {
             _vsService.Restart(SolutionPath);
@@ -109,4 +109,11 @@ public partial class MainViewModel : ObservableObject
 
     private void Log(string msg) =>
         App.Current.Dispatcher.Invoke(() => Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}"));
+}
+
+// Flyttad hit ner, men fortfarande i samma namespace
+public partial class FolderOption(string name, bool isChecked) : ObservableObject
+{
+    public string Name { get; } = name;
+    [ObservableProperty] private bool _isChecked = isChecked;
 }
