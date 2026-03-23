@@ -17,23 +17,23 @@ namespace Wiper.wpf.Services
                 if (string.IsNullOrEmpty(root)) return new List<ProjectFolder>();
 
                 return Directory.EnumerateDirectories(root, "*", SearchOption.AllDirectories)
-                    .Where(d =>
-                    {
-                        var name = Path.GetFileName(d).ToLower();
-                        return targetFolders.Contains(name);
-                    })
+                    .Where(d => targetFolders.Contains(Path.GetFileName(d).ToLower()))
                     .Select(d =>
                     {
                         long size = GetDirectorySize(d);
+                        // Hämta namnet på mappen ovanför (projektet)
+                        var parent = Path.GetDirectoryName(d);
+                        var projName = parent != null ? Path.GetFileName(parent) : "Root";
+
                         return new ProjectFolder
                         {
                             Name = Path.GetFileName(d),
+                            ProjectName = projName, // Spara projektnamn
                             FullPath = d,
                             SizeInBytes = size,
                             SizeDisplay = FormatSize(size)
                         };
-                    })
-                    .ToList();
+                    }).ToList();
             });
         }
 
@@ -58,57 +58,41 @@ namespace Wiper.wpf.Services
 
         public async Task DeleteFoldersAsync(IEnumerable<ProjectFolder> folders, Action<string> logger, bool isDryRun)
         {
-            // Notera 'async' framför lambdan här nere!
             await Task.Run(async () =>
             {
                 foreach (var folder in folders)
                 {
+                    string context = $"{folder.ProjectName} > {folder.Name}";
                     if (isDryRun)
                     {
-                        logger($"[DRY RUN] Skulle ha raderat: {folder.FullPath}");
+                        logger($"[DRY RUN] Skulle raderat: {context}");
                         continue;
                     }
 
                     try
                     {
-                        if (Directory.Exists(folder.FullPath))
+                        if (!Directory.Exists(folder.FullPath)) continue;
+                        logger($"Försöker radera: {context}...");
+
+                        int attempts = 0;
+                        bool success = false;
+                        while (attempts < 3 && !success)
                         {
-                            logger($"Försöker radera: {folder.Name}...");
-
-                            int attempts = 0;
-                            bool success = false;
-
-                            while (attempts < 3 && !success)
+                            try
                             {
-                                try
-                                {
-                                    Directory.Delete(folder.FullPath, true);
-                                    logger($"KLART: {folder.Name} raderad.");
-                                    success = true;
-                                }
-                                catch (IOException) when (attempts < 2)
-                                {
-                                    attempts++;
-                                    logger($"Väntar på låst fil i {folder.Name} (försök {attempts})...");
-                                    await Task.Delay(500); // Nu fungerar await här
-                                }
-                                catch (Exception ex)
-                                {
-                                    logger($"FEL: Kunde inte radera {folder.Name}: {ex.Message}");
-                                    break; // Avbryt retry vid andra typer av fel
-                                }
+                                Directory.Delete(folder.FullPath, true);
+                                logger($"KLART: {context} raderad.");
+                                success = true;
                             }
-
-                            if (!success && attempts >= 2)
+                            catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
                             {
-                                logger($"MISSLYC_KADES: {folder.Name} är fortfarande låst efter flera försök.");
+                                attempts++;
+                                logger($"Väntar på {context} (försök {attempts})...");
+                                await Task.Delay(1000); // Vänta lite längre vid låsning
                             }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        logger($"Systemfel vid hantering av {folder.Name}: {ex.Message}");
-                    }
+                    catch (Exception ex) { logger($"FEL: {context}: {ex.Message}"); }
                 }
             });
         }

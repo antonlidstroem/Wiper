@@ -20,51 +20,50 @@ namespace Wiper.wpf.Services
         public async Task<bool> SaveCleanAndCloseAsync(string solutionPath, Action<string> logger)
         {
             var dte = GetDTE(solutionPath);
-            if (dte == null)
-            {
-                logger("VS: Ingen aktiv instans hittad för denna .sln. Fortsätter till radering.");
-                return true;
-            }
+            if (dte == null) return true;
 
-            return await Task.Run(() =>
-            {
+            return await Task.Run(() => {
                 try
                 {
-                    // 1. SAVE
-                    logger("VS: Sparar alla filer...");
+                    logger("VS: Sparar och kör Clean...");
                     dte.ExecuteCommand("File.SaveAll");
+                    dte.Solution.SolutionBuild.Clean(true);
 
-                    // 2. CLEAN
-                    logger("VS: Kör Clean Solution...");
-                    dte.Solution.SolutionBuild.Clean(true); // true = vänta tills klar
-
-                    // Förbered stängning genom att hämta PID
-                    uint processId = 0;
-                    GetWindowThreadProcessId((IntPtr)dte.MainWindow.HWnd, out processId);
-
-                    // 3. CLOSE
-                    logger("VS: Stänger Visual Studio...");
+                    uint pid = 0;
+                    GetWindowThreadProcessId((IntPtr)dte.MainWindow.HWnd, out pid);
                     dte.Quit();
 
-                    // Vänta på att processen dör så att fil-låsen släpps inför 'Delete'
-                    if (processId > 0)
+                    if (pid > 0)
                     {
-                        try
-                        {
-                            var vsProcess = Process.GetProcessById((int)processId);
-                            if (!vsProcess.WaitForExit(15000)) return false;
-                        }
-                        catch { /* Redan stängd */ }
+                        var p = Process.GetProcessById((int)pid);
+                        p.WaitForExit(10000);
                     }
+
+                    // --- FIX: Döda zombie-processer som låser filer ---
+                    KillGhostProcesses(logger);
 
                     return true;
                 }
-                catch (Exception ex)
-                {
-                    logger($"VS Fel under avslutningssekvens: {ex.Message}");
-                    return false;
-                }
+                catch (Exception ex) { logger($"VS Fel: {ex.Message}"); return false; }
             });
+        }
+
+        private void KillGhostProcesses(Action<string> logger)
+        {
+            // Dessa processer är de vanligaste bovarna bakom "Access Denied"
+            string[] ghosts = { "VBCSCompiler", "MSBuild" };
+            foreach (var name in ghosts)
+            {
+                foreach (var p in Process.GetProcessesByName(name))
+                {
+                    try
+                    {
+                        p.Kill();
+                        logger($"System: Tvingade avslut av {name} (släpper fil-lås).");
+                    }
+                    catch { }
+                }
+            }
         }
 
         public async Task RestartAndRebuildAsync(string solutionPath, Action<string> logger)

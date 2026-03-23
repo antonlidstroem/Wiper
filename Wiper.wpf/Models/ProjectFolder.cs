@@ -5,6 +5,7 @@ namespace Wiper.wpf.Models;
 public partial class ProjectFolder : ObservableObject
 {
     public string Name { get; init; } = string.Empty;
+    public string ProjectName { get; init; } = string.Empty;
     public string FullPath { get; init; } = string.Empty;
 
     // Vi använder [ObservableProperty] så att vi kan trigga omräkning i ViewModel
