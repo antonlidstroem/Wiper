@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Wiper.wpf.ViewModels"
         xmlns:conv="clr-namespace:Wiper.wpf.Converters"
-        Title="Wiper V2.0" Height="700" Width="900" Background="#F0F0F0">
+        Title="Wiper - wipes bin and obj folders" Height="850" Width="655" Background="#F0F0F0">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -17,15 +17,25 @@
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="150"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="White" Padding="10" Margin="0,0,0,15">
+
+        
+
+
+
+
+
+
+
+        <Border Grid.Row="0" Background="White" Padding="5" Margin="0,0,0,15">
             <StackPanel>
-                <Image Source="Resources/Images/wiper-logo.png" Width="80" Height="80" HorizontalAlignment="Left"/>
-                <TextBlock Text="Solution Path (.sln)" FontWeight="Bold" Margin="0,10,0,5"/>
+                <Image Source="Resources/Images/wiper-logo.png" Width="120" Height="120" HorizontalAlignment="Center"/>
+                <TextBlock Text="Solution Path (.sln)" FontWeight="Bold" Margin="0,0,0,2"/>
                 <DockPanel>
                     <Button Content="Skanna mappar" Command="{Binding ScanCommand}" 
                             IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
@@ -64,16 +74,36 @@
                         </GridViewColumn>
                         <GridViewColumn Header="Typ" DisplayMemberBinding="{Binding Name}" Width="60"/>
                         <GridViewColumn Header="Storlek" DisplayMemberBinding="{Binding SizeDisplay}" Width="80"/>
-                        <GridViewColumn Header="Sökväg" DisplayMemberBinding="{Binding FullPath}" Width="500"/>
+                        <GridViewColumn Header="Sökväg" DisplayMemberBinding="{Binding FullPath}" Width="420"/>
                     </GridView>
                 </ListView.View>
             </ListView>
         </GroupBox>
 
-        <ListBox Grid.Row="2" ItemsSource="{Binding Logs}" Margin="0,10,0,0" 
-                 Background="#1E1E1E" Foreground="LightGreen" FontFamily="Consolas"/>
+        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="Transparent" Margin="0,5"/>
 
-        <StatusBar Grid.Row="3" Background="Transparent" Margin="0,10,0,0">
+
+        <DockPanel Grid.Row="3" Margin="0,5,0,0">
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Text="LOGG" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
+
+                <Button Content="Kopiera allt" 
+                Command="{Binding CopyLogsCommand}" 
+                Padding="10,2" Margin="0,0,5,0"
+                Background="#E0E0E0" FontSize="11"/>
+
+                <Button Content="Rensa logg" 
+                Command="{Binding ClearLogsCommand}" 
+                Padding="10,2"
+                Background="#FFE0E0" FontSize="11"/>
+            </StackPanel>
+
+            <ListBox ItemsSource="{Binding Logs}" 
+             Background="#1E1E1E" Foreground="LightGreen" 
+             FontFamily="Consolas" BorderThickness="0"/>
+        </DockPanel>
+        
+        <StatusBar Grid.Row="4" Background="Transparent" Margin="0,10,0,0">
             <StatusBar.ItemsPanel>
                 <ItemsPanelTemplate>
                     <Grid>

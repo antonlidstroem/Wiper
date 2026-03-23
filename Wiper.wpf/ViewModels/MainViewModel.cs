@@ -77,50 +77,61 @@ public partial class MainViewModel : ObservableObject
 
         if (!IsDryRun)
         {
-            var result = MessageBox.Show("Vill du rensa på riktigt? Visual Studio kommer att stängas.",
-                                       "Bekräfta rensning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            var result = MessageBox.Show("Sekvens: Save -> Clean -> Close -> Delete -> Restart -> Rebuild.\nVill du köra?",
+                                       "Bekräfta total rensning", MessageBoxButton.YesNo, MessageBoxImage.Information);
             if (result != MessageBoxResult.Yes) return;
         }
 
         IsBusy = true;
-
         try
         {
             if (!IsDryRun)
             {
-                // VIKTIGT: Vi väntar på bekräftelse att VS faktiskt stängdes
-                bool isReadyToDelete = await _vsService.CleanAndCloseAsync(SolutionPath, Log);
-
-                if (!isReadyToDelete)
+                // STEG 1, 2 & 3: Save, Clean, Close
+                bool readyForDelete = await _vsService.SaveCleanAndCloseAsync(SolutionPath, Log);
+                if (!readyForDelete)
                 {
-                    Log("AVBRUTET: Kunde inte verifiera att VS stängdes. Radering ej utförd.");
-                    Status = "Rensning misslyckades.";
-                    return; // Gå ur metoden här!
+                    Log("AVBRUTET: VS kunde inte stängas säkert.");
+                    return;
                 }
             }
-            else
-            {
-                Log("--- STARTAR SIMULERING ---");
-            }
 
-            // Kör radering först när vi vet att VS är borta
+            // STEG 4: Delete (Fysisk radering av mappar)
+            // Denna körs nu när VS är helt borta och inga filer är låsta
             await _fileService.DeleteFoldersAsync(selected, Log, IsDryRun);
 
             if (!IsDryRun)
             {
-                Log("Rensning klar. Startar om Visual Studio...");
-                _vsService.Restart(SolutionPath);
-                Status = "Klart!";
-            }
-            else
-            {
-                Log("--- SIMULERING KLAR ---");
+                // STEG 5 & 6: Restart & Rebuild
+                await _vsService.RestartAndRebuildAsync(SolutionPath, Log);
+                Status = "Fullständig cykel genomförd!";
             }
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    [RelayCommand]
+    private void CopyLogs()
+    {
+        if (Logs.Count == 0) return;
+
+        // Eftersom du gör Logs.Insert(0, ...) är loggen "bakvänd" (nyast först).
+        // Vi vänder på den här så att den kopierade texten blir i kronologisk ordning.
+        var fullLog = string.Join(Environment.NewLine, Logs.Reverse());
+
+        Clipboard.SetText(fullLog);
+        Log("System: Loggen har kopierats till urklipp.");
+    }
+
+    [RelayCommand]
+    private void ClearLogs()
+    {
+        Logs.Clear();
+        Status = "Loggen rensad.";
+        Log("System: Loggen har nollställts.");
     }
 
     private void Log(string msg) =>

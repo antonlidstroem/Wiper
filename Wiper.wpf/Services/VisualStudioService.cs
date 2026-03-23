@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
 using System.Threading.Tasks;
@@ -12,22 +10,19 @@ namespace Wiper.wpf.Services
 {
     public class VisualStudioService
     {
-        // --- P/Invoke för att hantera processer och COM ---
         [DllImport("user32.dll")]
         private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
-
         [DllImport("ole32.dll")]
         private static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable prot);
-
         [DllImport("ole32.dll")]
         private static extern int CreateBindCtx(int reserved, out IBindCtx ppbc);
 
-        public async Task<bool> CleanAndCloseAsync(string solutionPath, Action<string> logger)
+        public async Task<bool> SaveCleanAndCloseAsync(string solutionPath, Action<string> logger)
         {
             var dte = GetDTE(solutionPath);
             if (dte == null)
             {
-                logger("VS: Ingen öppen instans hittades för denna lösning. Fortsätter...");
+                logger("VS: Ingen aktiv instans hittad för denna .sln. Fortsätter till radering.");
                 return true;
             }
 
@@ -35,56 +30,75 @@ namespace Wiper.wpf.Services
             {
                 try
                 {
+                    // 1. SAVE
                     logger("VS: Sparar alla filer...");
                     dte.ExecuteCommand("File.SaveAll");
 
-                    // Hämta Process ID via fönstret innan vi stänger
-                    uint processId = 0;
-                    try
-                    {
-                        GetWindowThreadProcessId((IntPtr)dte.MainWindow.HWnd, out processId);
-                    }
-                    catch { /* Ignonera om vi inte kan hämta HWND */ }
+                    // 2. CLEAN
+                    logger("VS: Kör Clean Solution...");
+                    dte.Solution.SolutionBuild.Clean(true); // true = vänta tills klar
 
-                    logger("VS: Stänger ned Visual Studio...");
+                    // Förbered stängning genom att hämta PID
+                    uint processId = 0;
+                    GetWindowThreadProcessId((IntPtr)dte.MainWindow.HWnd, out processId);
+
+                    // 3. CLOSE
+                    logger("VS: Stänger Visual Studio...");
                     dte.Quit();
 
-                    // Vänta på att processen faktiskt dör så att fil-låsen släpps
+                    // Vänta på att processen dör så att fil-låsen släpps inför 'Delete'
                     if (processId > 0)
                     {
                         try
                         {
                             var vsProcess = Process.GetProcessById((int)processId);
-                            logger($"Väntar på att processen ({processId}) avslutas...");
-
-                            // Vänta max 15 sekunder
-                            if (!vsProcess.WaitForExit(15000))
-                            {
-                                logger("FEL: Visual Studio stängdes inte i tid. Radering avbruten.");
-                                return false;
-                            }
+                            if (!vsProcess.WaitForExit(15000)) return false;
                         }
-                        catch (ArgumentException) { /* Processen hann redan stängas */ }
+                        catch { /* Redan stängd */ }
                     }
 
-                    logger("VS: Stängning bekräftad.");
                     return true;
                 }
                 catch (Exception ex)
                 {
-                    logger($"VS Fel: {ex.Message}");
+                    logger($"VS Fel under avslutningssekvens: {ex.Message}");
                     return false;
                 }
             });
         }
 
-        public void Restart(string path)
+        public async Task RestartAndRebuildAsync(string solutionPath, Action<string> logger)
         {
-            Process.Start(new ProcessStartInfo
+            // 5. RESTART
+            logger("VS: Startar om Visual Studio...");
+            Process.Start(new ProcessStartInfo { FileName = solutionPath, UseShellExecute = true });
+
+            DTE2? dte = null;
+            int attempts = 0;
+
+            // Vänta på att VS dyker upp i ROT igen
+            while (dte == null && attempts < 15)
             {
-                FileName = path,
-                UseShellExecute = true
-            });
+                await Task.Delay(3000);
+                dte = GetDTE(solutionPath);
+                attempts++;
+                logger($"VS: Väntar på att solution laddas... (försök {attempts})");
+            }
+
+            if (dte != null)
+            {
+                try
+                {
+                    // 6. REBUILD
+                    logger("VS: Triggar Rebuild Solution...");
+                    dte.ExecuteCommand("Build.RebuildSolution");
+                    logger("VS: Rebuild påbörjad!");
+                }
+                catch (Exception ex)
+                {
+                    logger($"VS Fel vid Rebuild: {ex.Message}");
+                }
+            }
         }
 
         private DTE2? GetDTE(string solutionPath)
@@ -106,15 +120,14 @@ namespace Wiper.wpf.Services
                     {
                         rot.GetObject(moniker[0], out var obj);
                         var dte = (DTE2)obj;
-                        if (string.Equals(dte.Solution.FullName, solutionPath, StringComparison.OrdinalIgnoreCase))
+                        if (dte.Solution?.FullName?.Equals(solutionPath, StringComparison.OrdinalIgnoreCase) == true)
+                        {
                             return dte;
+                        }
                     }
                 }
             }
-            catch
-            {
-                return null;
-            }
+            catch { /* Upptagen eller startar */ }
             return null;
         }
     }
