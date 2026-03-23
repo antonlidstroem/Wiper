@@ -77,34 +77,50 @@ public partial class MainViewModel : ObservableObject
 
         if (!IsDryRun)
         {
-            if (MessageBox.Show("Vill du rensa på riktigt och starta om VS?", "Wiper", MessageBoxButton.YesNo) != MessageBoxResult.Yes)
-                return;
+            var result = MessageBox.Show("Vill du rensa på riktigt? Visual Studio kommer att stängas.",
+                                       "Bekräfta rensning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes) return;
         }
 
         IsBusy = true;
 
-        if (!IsDryRun)
+        try
         {
-            await _vsService.CleanAndCloseAsync(SolutionPath, Log);
-        }
-        else
-        {
-            Log("--- STARTAR SIMULERING ---");
-        }
+            if (!IsDryRun)
+            {
+                // VIKTIGT: Vi väntar på bekräftelse att VS faktiskt stängdes
+                bool isReadyToDelete = await _vsService.CleanAndCloseAsync(SolutionPath, Log);
 
-        await _fileService.DeleteFoldersAsync(selected, Log, IsDryRun);
+                if (!isReadyToDelete)
+                {
+                    Log("AVBRUTET: Kunde inte verifiera att VS stängdes. Radering ej utförd.");
+                    Status = "Rensning misslyckades.";
+                    return; // Gå ur metoden här!
+                }
+            }
+            else
+            {
+                Log("--- STARTAR SIMULERING ---");
+            }
 
-        if (!IsDryRun)
-        {
-            _vsService.Restart(SolutionPath);
-            Log("Klar och omstartad!");
-        }
-        else
-        {
-            Log("--- SIMULERING KLAR ---");
-        }
+            // Kör radering först när vi vet att VS är borta
+            await _fileService.DeleteFoldersAsync(selected, Log, IsDryRun);
 
-        IsBusy = false;
+            if (!IsDryRun)
+            {
+                Log("Rensning klar. Startar om Visual Studio...");
+                _vsService.Restart(SolutionPath);
+                Status = "Klart!";
+            }
+            else
+            {
+                Log("--- SIMULERING KLAR ---");
+            }
+        }
+        finally
+        {
+            IsBusy = false;
+        }
     }
 
     private void Log(string msg) =>

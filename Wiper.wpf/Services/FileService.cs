@@ -2,13 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Wiper.wpf.Models;
 
 namespace Wiper.wpf.Services
 {
-
     public class FileService
     {
         public async Task<List<ProjectFolder>> ScanFoldersAsync(string solutionPath, List<string> targetFolders)
@@ -22,7 +20,6 @@ namespace Wiper.wpf.Services
                     .Where(d =>
                     {
                         var name = Path.GetFileName(d).ToLower();
-                        // Kolla om mappen finns i vår valda lista (t.ex. bin, obj, .vs)
                         return targetFolders.Contains(name);
                     })
                     .Select(d =>
@@ -59,10 +56,10 @@ namespace Wiper.wpf.Services
             return $"{dblSByte:0.##} {Suffix[i]}";
         }
 
-        // Uppdaterad metod i FileService.cs
         public async Task DeleteFoldersAsync(IEnumerable<ProjectFolder> folders, Action<string> logger, bool isDryRun)
         {
-            await Task.Run(() =>
+            // Notera 'async' framför lambdan här nere!
+            await Task.Run(async () =>
             {
                 foreach (var folder in folders)
                 {
@@ -76,13 +73,41 @@ namespace Wiper.wpf.Services
                     {
                         if (Directory.Exists(folder.FullPath))
                         {
-                            logger($"Raderar: {folder.FullPath}");
-                            Directory.Delete(folder.FullPath, true);
+                            logger($"Försöker radera: {folder.Name}...");
+
+                            int attempts = 0;
+                            bool success = false;
+
+                            while (attempts < 3 && !success)
+                            {
+                                try
+                                {
+                                    Directory.Delete(folder.FullPath, true);
+                                    logger($"KLART: {folder.Name} raderad.");
+                                    success = true;
+                                }
+                                catch (IOException) when (attempts < 2)
+                                {
+                                    attempts++;
+                                    logger($"Väntar på låst fil i {folder.Name} (försök {attempts})...");
+                                    await Task.Delay(500); // Nu fungerar await här
+                                }
+                                catch (Exception ex)
+                                {
+                                    logger($"FEL: Kunde inte radera {folder.Name}: {ex.Message}");
+                                    break; // Avbryt retry vid andra typer av fel
+                                }
+                            }
+
+                            if (!success && attempts >= 2)
+                            {
+                                logger($"MISSLYC_KADES: {folder.Name} är fortfarande låst efter flera försök.");
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
-                        logger($"Kunde inte radera {folder.Name}: {ex.Message}");
+                        logger($"Systemfel vid hantering av {folder.Name}: {ex.Message}");
                     }
                 }
             });

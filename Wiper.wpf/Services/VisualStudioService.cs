@@ -1,90 +1,121 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.ComTypes;
-using EnvDTE;
+using System.Threading.Tasks;
 using EnvDTE80;
 using Process = System.Diagnostics.Process;
 
-namespace Wiper.wpf.Services;
-
-public class VisualStudioService
+namespace Wiper.wpf.Services
 {
-    [DllImport("ole32.dll")]
-    private static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable prot);
-
-    [DllImport("ole32.dll")]
-    private static extern int CreateBindCtx(int reserved, out IBindCtx ppbc);
-
-    public async Task<bool> CleanAndCloseAsync(string solutionPath, Action<string> logger)
+    public class VisualStudioService
     {
-        DTE2? dte = GetDTE(solutionPath);
-        if (dte == null)
-        {
-            logger("VS: Lösningen hittades inte i någon öppen Visual Studio-instans. Går vidare till radering.");
-            return true;
-        }
+        // --- P/Invoke för att hantera processer och COM ---
+        [DllImport("user32.dll")]
+        private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
-        return await Task.Run(() =>
+        [DllImport("ole32.dll")]
+        private static extern int GetRunningObjectTable(int reserved, out IRunningObjectTable prot);
+
+        [DllImport("ole32.dll")]
+        private static extern int CreateBindCtx(int reserved, out IBindCtx ppbc);
+
+        public async Task<bool> CleanAndCloseAsync(string solutionPath, Action<string> logger)
         {
-            try
+            var dte = GetDTE(solutionPath);
+            if (dte == null)
             {
-                logger("VS: Sparar alla filer...");
-                dte.ExecuteCommand("File.SaveAll");
-
-                logger("VS: Kör Clean Solution...");
-                // true betyder att vi väntar tills clean är klar
-                dte.Solution.SolutionBuild.Clean(true);
-
-                logger("VS: Stänger ner...");
-                int processId = GetVsProcessId(dte);
-                dte.Quit();
-
-                // Vänta på att processen faktiskt dör så att fil-låsen släpps
-                if (processId > 0)
-                {
-                    var vsProcess = Process.GetProcessById(processId);
-                    logger("Väntar på att processen avslutas...");
-                    vsProcess.WaitForExit(10000); // Max 10 sekunder
-                }
-
+                logger("VS: Ingen öppen instans hittades för denna lösning. Fortsätter...");
                 return true;
             }
-            catch (Exception ex)
+
+            return await Task.Run(() =>
             {
-                logger($"VS Fel: {ex.Message}");
-                return false;
-            }
-        });
-    }
+                try
+                {
+                    logger("VS: Sparar alla filer...");
+                    dte.ExecuteCommand("File.SaveAll");
 
-    // Hjälpmetod för att hitta rätt process
-    private int GetVsProcessId(DTE2 dte)
-    {
-        try { return Process.GetProcessesByName("devenv").FirstOrDefault(p => p.MainWindowTitle.Contains(Path.GetFileNameWithoutExtension(dte.Solution.FullName)))?.Id ?? 0; }
-        catch { return 0; }
-    }
+                    // Hämta Process ID via fönstret innan vi stänger
+                    uint processId = 0;
+                    try
+                    {
+                        GetWindowThreadProcessId((IntPtr)dte.MainWindow.HWnd, out processId);
+                    }
+                    catch { /* Ignonera om vi inte kan hämta HWND */ }
 
-    public void Restart(string path) =>
-        Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+                    logger("VS: Stänger ned Visual Studio...");
+                    dte.Quit();
 
-    private DTE2? GetDTE(string solutionPath)
-    {
-        GetRunningObjectTable(0, out var rot);
-        rot.EnumRunning(out var enumMoniker);
-        IMoniker[] moniker = new IMoniker[1];
-        while (enumMoniker.Next(1, moniker, IntPtr.Zero) == 0)
-        {
-            CreateBindCtx(0, out var bindCtx);
-            moniker[0].GetDisplayName(bindCtx, null, out var name);
-            if (name.StartsWith("!VisualStudio.DTE"))
-            {
-                rot.GetObject(moniker[0], out var obj);
-                var dte = (DTE2)obj;
-                if (string.Equals(dte.Solution.FullName, solutionPath, StringComparison.OrdinalIgnoreCase))
-                    return dte;
-            }
+                    // Vänta på att processen faktiskt dör så att fil-låsen släpps
+                    if (processId > 0)
+                    {
+                        try
+                        {
+                            var vsProcess = Process.GetProcessById((int)processId);
+                            logger($"Väntar på att processen ({processId}) avslutas...");
+
+                            // Vänta max 15 sekunder
+                            if (!vsProcess.WaitForExit(15000))
+                            {
+                                logger("FEL: Visual Studio stängdes inte i tid. Radering avbruten.");
+                                return false;
+                            }
+                        }
+                        catch (ArgumentException) { /* Processen hann redan stängas */ }
+                    }
+
+                    logger("VS: Stängning bekräftad.");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    logger($"VS Fel: {ex.Message}");
+                    return false;
+                }
+            });
         }
-        return null;
+
+        public void Restart(string path)
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = path,
+                UseShellExecute = true
+            });
+        }
+
+        private DTE2? GetDTE(string solutionPath)
+        {
+            IRunningObjectTable? rot = null;
+            IEnumMoniker? enumMoniker = null;
+            try
+            {
+                GetRunningObjectTable(0, out rot);
+                rot.EnumRunning(out enumMoniker);
+                IMoniker[] moniker = new IMoniker[1];
+
+                while (enumMoniker.Next(1, moniker, IntPtr.Zero) == 0)
+                {
+                    CreateBindCtx(0, out var bindCtx);
+                    moniker[0].GetDisplayName(bindCtx, null, out var name);
+
+                    if (name.StartsWith("!VisualStudio.DTE"))
+                    {
+                        rot.GetObject(moniker[0], out var obj);
+                        var dte = (DTE2)obj;
+                        if (string.Equals(dte.Solution.FullName, solutionPath, StringComparison.OrdinalIgnoreCase))
+                            return dte;
+                    }
+                }
+            }
+            catch
+            {
+                return null;
+            }
+            return null;
+        }
     }
 }
