@@ -2,7 +2,7 @@
 using Wiper.Core.Models;
 using Wiper.Core.Services;
 
-Console.WriteLine("=== WIPER CLI - Visual Studio Housekeeper ===");
+Console.WriteLine("=== WIPER CLI - wipes bin and obj folders ===");
 
 // 1. Hantera argument
 if (args.Length == 0 || args.Contains("--help") || args.Contains("-h"))
@@ -18,7 +18,7 @@ var filters = GetFiltersFromArgs(args);
 if (!File.Exists(slnPath))
 {
     Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine($"Fel: Hittade inte filen '{slnPath}'");
+    Console.WriteLine($"Error: Could not find the file '{slnPath}'");
     Console.ResetColor();
     return;
 }
@@ -30,8 +30,8 @@ var vsService = new VisualStudioService();
 // Funktion för snygg loggning i konsolen
 Action<string> logger = (msg) =>
 {
-    if (msg.StartsWith("FEL")) Console.ForegroundColor = ConsoleColor.Red;
-    else if (msg.StartsWith("KLART")) Console.ForegroundColor = ConsoleColor.Green;
+    if (msg.StartsWith("ERROR")) Console.ForegroundColor = ConsoleColor.Red;
+    else if (msg.StartsWith("DONE")) Console.ForegroundColor = ConsoleColor.Green;
     else if (msg.Contains("[DRY RUN]")) Console.ForegroundColor = ConsoleColor.Yellow;
 
     Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {msg}");
@@ -44,16 +44,16 @@ var folders = await fileService.ScanFoldersAsync(slnPath, filters);
 
 if (!folders.Any())
 {
-    logger("Inga mappar hittades som matchar filtren.");
+    logger("No folders matched the filters.");
     return;
 }
 
 long totalSize = folders.Sum(f => f.SizeInBytes);
-logger($"Hittade {folders.Count} mappar. Total storlek: {ByteSizeFormatter.FormatSize(totalSize)}");
+logger($"Found {folders.Count} folders. Total file size: {ByteSizeFormatter.FormatSize(totalSize)}");
 
 if (isDryRun)
 {
-    logger("--- KÖR SIMULERING (Dry Run) ---");
+    logger("--- DRY RUN ---");
     logger("Använd flaggan --force för att utföra raderingen på riktigt.");
 }
 else
