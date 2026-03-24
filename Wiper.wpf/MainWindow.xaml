@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="clr-namespace:Wiper.wpf.ViewModels"
         xmlns:conv="clr-namespace:Wiper.wpf.Converters"
-        Title="Wiper V2.0" Height="600" Width="800" Background="#F0F0F0">
+        Title="Wiper - wipes bin and obj folders" Height="850" Width="655" Background="#F0F0F0">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
@@ -17,23 +17,49 @@
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="150"/>
+            <RowDefinition Height="1*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="2*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <StackPanel Grid.Row="0" Margin="0,0,0,15" Background="White">
-            <Image Source="Resources/Images/wiper-logo.png"
-                Width="120"
-                Height="120"/>
-            <TextBlock Text="Solution Path (.sln)" FontWeight="Bold" Margin="0,0,0,5"/>
-            <DockPanel>
-                <Button Content="Skanna mappar" Command="{Binding ScanCommand}" 
-                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
-                        Padding="15,5" DockPanel.Dock="Right" Margin="10,0,0,0"/>
-                <TextBox Text="{Binding SolutionPath, UpdateSourceTrigger=PropertyChanged}" Padding="5"/>
-            </DockPanel>
-        </StackPanel>
+
+        
+
+
+
+
+
+
+
+        <Border Grid.Row="0" Background="White" Padding="5" Margin="0,0,0,15">
+            <StackPanel>
+                <Image Source="Resources/Images/wiper-logo.png" Width="120" Height="120" HorizontalAlignment="Center"/>
+                <TextBlock Text="Solution Path (.sln)" FontWeight="Bold" Margin="0,0,0,2"/>
+                <DockPanel>
+                    <Button Content="Skanna mappar" Command="{Binding ScanCommand}" 
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
+                            Padding="15,5" DockPanel.Dock="Right" Margin="10,0,0,0"/>
+                    <TextBox Text="{Binding SolutionPath, UpdateSourceTrigger=PropertyChanged}" Padding="5"/>
+                </DockPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <TextBlock Text="Inkludera: " VerticalAlignment="Center" FontWeight="Bold"/>
+                    <ItemsControl ItemsSource="{Binding FolderTypeOptions}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <CheckBox Content="{Binding Name}" IsChecked="{Binding IsChecked}" Margin="10,0"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </Border>
 
         <GroupBox Grid.Row="1" Header="Mappar hittade">
             <ListView ItemsSource="{Binding Folders}">
@@ -42,28 +68,72 @@
                         <GridViewColumn Header="Val">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <CheckBox IsChecked="{Binding IsSelected}"/>
+                                    <CheckBox IsChecked="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
+                        <GridViewColumn Header="Projekt" DisplayMemberBinding="{Binding ProjectName}" Width="150"/>
                         <GridViewColumn Header="Typ" DisplayMemberBinding="{Binding Name}" Width="60"/>
-                        <GridViewColumn Header="Sökväg" DisplayMemberBinding="{Binding FullPath}" Width="500"/>
+                        <GridViewColumn Header="Storlek" DisplayMemberBinding="{Binding SizeDisplay}" Width="80"/>
+                        <GridViewColumn Header="Sökväg" DisplayMemberBinding="{Binding FullPath}" Width="300"/>
                     </GridView>
                 </ListView.View>
             </ListView>
         </GroupBox>
 
-        <ListBox Grid.Row="2" ItemsSource="{Binding Logs}" Margin="0,10,0,0" 
-                 Background="#1E1E1E" Foreground="LightGreen" FontFamily="Consolas"/>
+        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch" Background="Transparent" Margin="0,5"/>
 
-        <StatusBar Grid.Row="3" Background="Transparent" Margin="0,10,0,0">
-            <TextBlock Text="{Binding Status}"/>
-            <Button Content="KÖR RENSNING &amp; RESTART" HorizontalAlignment="Right"
-                    Command="{Binding CleanCommand}" IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
-                    Background="#007ACC" Foreground="White" FontWeight="Bold" Padding="20,5"/>
 
-            
+        <DockPanel Grid.Row="3" Margin="0,5,0,0">
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,5">
+                <TextBlock Text="LOGG" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
 
+                <Button Content="Kopiera allt" 
+                Command="{Binding CopyLogsCommand}" 
+                Padding="10,2" Margin="0,0,5,0"
+                Background="#E0E0E0" FontSize="11"/>
+
+                <Button Content="Rensa logg" 
+                Command="{Binding ClearLogsCommand}" 
+                Padding="10,2"
+                Background="#FFE0E0" FontSize="11"/>
+            </StackPanel>
+
+            <ListBox ItemsSource="{Binding Logs}" 
+             Background="#1E1E1E" Foreground="LightGreen" 
+             FontFamily="Consolas" BorderThickness="0"/>
+        </DockPanel>
+        
+        <StatusBar Grid.Row="4" Background="Transparent" Margin="0,10,0,0">
+            <StatusBar.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                    </Grid>
+                </ItemsPanelTemplate>
+            </StatusBar.ItemsPanel>
+            <StatusBarItem Grid.Column="0">
+                <TextBlock Text="{Binding Status}"/>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="1">
+                <CheckBox Content="Dry Run (Simulera)" IsChecked="{Binding IsDryRun}" Margin="10,0"/>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="2" HorizontalAlignment="Right">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Total vinst: " FontWeight="Bold"/>
+                    <TextBlock Text="{Binding TotalSizeDisplay}" Foreground="#007ACC" FontWeight="Bold" Margin="0,0,20,0"/>
+                </StackPanel>
+            </StatusBarItem>
+            <StatusBarItem Grid.Column="3">
+                <Button Content="KÖR RENSNING" Command="{Binding CleanCommand}" 
+                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
+                        Background="#007ACC" Foreground="White" FontWeight="Bold" Padding="20,5"/>
+            </StatusBarItem>
         </StatusBar>
 
         <Grid Grid.RowSpan="4" Background="#88FFFFFF" Visibility="{Binding IsBusy, Converter={StaticResource BoolToVis}}">

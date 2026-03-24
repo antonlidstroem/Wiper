@@ -1,8 +1,16 @@
-﻿namespace Wiper.wpf.Models;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-public class ProjectFolder
+namespace Wiper.wpf.Models;
+
+public partial class ProjectFolder : ObservableObject
 {
     public string Name { get; init; } = string.Empty;
+    public string ProjectName { get; init; } = string.Empty;
     public string FullPath { get; init; } = string.Empty;
-    public bool IsSelected { get; set; } = true;
+
+    // Vi använder [ObservableProperty] så att vi kan trigga omräkning i ViewModel
+    [ObservableProperty] private bool _isSelected = true;
+
+    public long SizeInBytes { get; set; }
+    public string SizeDisplay { get; set; } = "0 B";
 }
