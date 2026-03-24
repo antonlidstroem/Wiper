@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Wiper.wpf.Models;
 
+
 namespace Wiper.wpf.Services
 {
     public class FileService
@@ -31,7 +32,7 @@ namespace Wiper.wpf.Services
                             ProjectName = projName, // Spara projektnamn
                             FullPath = d,
                             SizeInBytes = size,
-                            SizeDisplay = FormatSize(size)
+                            SizeDisplay = ByteSizeFormatter.FormatSize(size)
                         };
                     }).ToList();
             });
@@ -45,15 +46,6 @@ namespace Wiper.wpf.Services
                                 .Sum(f => new FileInfo(f).Length);
             }
             catch { return 0; }
-        }
-
-        private string FormatSize(long bytes)
-        {
-            string[] Suffix = { "B", "KB", "MB", "GB", "TB" };
-            int i;
-            double dblSByte = bytes;
-            for (i = 0; i < Suffix.Length && bytes >= 1024; i++, bytes /= 1024) dblSByte = bytes / 1024.0;
-            return $"{dblSByte:0.##} {Suffix[i]}";
         }
 
         public async Task DeleteFoldersAsync(IEnumerable<ProjectFolder> folders, Action<string> logger, bool isDryRun)
