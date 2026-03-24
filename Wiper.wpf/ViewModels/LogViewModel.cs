@@ -21,7 +21,7 @@ namespace Wiper.wpf.ViewModels
         }
 
         [RelayCommand]
-        private void CopyLogs()
+        public void CopyLogs()
         {
             if (Logs.Count == 0) return;
             var fullLog = string.Join(Environment.NewLine, Logs.Reverse());
