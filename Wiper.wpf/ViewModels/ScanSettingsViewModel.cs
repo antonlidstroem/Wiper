@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using System.Collections.ObjectModel;
-using Wiper.wpf.Models;
+using Wiper.Core.Models;
 
 namespace Wiper.wpf.ViewModels;
 

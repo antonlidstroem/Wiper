@@ -12,6 +12,10 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\Wiper.Core\Wiper.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
 	  <Compile Remove="Assets\**" />
 	  <EmbeddedResource Remove="Assets\**" />
 	  <None Remove="Assets\**" />
@@ -21,7 +25,6 @@
 	<!-- Paketreferenser -->
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
-		<PackageReference Include="Microsoft.VisualStudio.Interop" Version="17.9.37000" />
 	</ItemGroup>
 
 	<!-- PNG-bilder som används i UI -->

@@ -1,8 +1,10 @@
 ﻿using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Wiper.wpf.Interfaces;
+using Wiper.Core.Interfaces;
+using Wiper.Core.Services;
 using Wiper.wpf.Services;
+using Wiper.Core.Models; 
 
 namespace Wiper.wpf.ViewModels;
 

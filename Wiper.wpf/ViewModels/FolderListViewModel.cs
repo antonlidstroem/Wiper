@@ -1,8 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
-using Wiper.wpf.Models;
-using Wiper.wpf.Services;
+using Wiper.Core.Models;
+using Wiper.Core.Services;
 
 namespace Wiper.wpf.ViewModels;
 

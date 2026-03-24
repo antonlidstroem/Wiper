@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Wiper.wpf.Services
+namespace Wiper.Core.Services
 {
     public static class ByteSizeFormatter
     {
