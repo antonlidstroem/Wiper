@@ -30,6 +30,7 @@
 		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Resource>
 		<Resource Include="Resources\Images\wiper-logo.png" />
+		<Resource Include="Resources\Images\wiper-white.png" />
 	</ItemGroup>
 
 	<!-- Mappen för ikonen -->
