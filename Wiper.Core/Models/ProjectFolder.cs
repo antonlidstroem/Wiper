@@ -1,6 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 
+namespace Wiper.Core.Models;
+
 public partial class ProjectFolder : ObservableObject
 {
     public string Name { get; init; } = string.Empty;
@@ -19,4 +21,3 @@ public partial class ProjectFolder : ObservableObject
 }
 
 
-public record FolderSelectionChangedMessage();

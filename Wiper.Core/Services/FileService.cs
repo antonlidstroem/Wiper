@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Wiper.wpf.Models;
+using Wiper.Core.Models;
 
 
-namespace Wiper.wpf.Services
+namespace Wiper.Core.Services
 {
     public class FileService
     {

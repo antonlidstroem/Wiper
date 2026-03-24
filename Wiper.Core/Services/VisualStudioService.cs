@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using EnvDTE80;
 using Process = System.Diagnostics.Process;
 
-namespace Wiper.wpf.Services
+namespace Wiper.Core.Services
 {
     public class VisualStudioService
     {

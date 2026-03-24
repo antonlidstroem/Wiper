@@ -1,6 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace Wiper.wpf.Models;
+namespace Wiper.Core.Models;
 
 public partial class FolderOption(string name, bool isChecked) : ObservableObject
 {
@@ -8,5 +8,5 @@ public partial class FolderOption(string name, bool isChecked) : ObservableObjec
     [ObservableProperty] private bool _isChecked = isChecked;
 }
 
-// Meddelandet för Messenger
+
 public record FolderSelectionChangedMessage();
