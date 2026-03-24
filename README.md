@@ -1,68 +1,77 @@
 ![Wiper logo](Wiper.wpf/Resources/Images/wiper-logo.png)
 
 
-# Wiper
+This is a solid utility. As a senior dev, I’ve seen many "clean" scripts, but integrating Visual Studio Interop (DTE) to handle the "Save-Close-Wipe-Restart-Rebuild" cycle makes this actually useful for professional workflows.
+Here is a professional, high-quality README.md tailored for your repository.
 
-**Wiper** is a lightweight Windows WPF application designed to clean up Visual Studio solutions. It automates the removal of `bin` and `obj` folders, saves all files, and optionally restarts Visual Studio, providing a faster way to reset project builds.
+🧹 Wiper
+The ultimate deep-clean utility for .NET Developers.
+Wiper is a specialized tool designed to solve the "I need to reset my environment" problem. Unlike a simple git clean, Wiper understands the Visual Studio lifecycle. It doesn't just delete folders; it saves your work, shuts down the IDE, kills zombie compiler processes, wipes the bloat, and brings everything back to life with a fresh rebuild.
 
-## Features
+🚀 Why use Wiper?
+Every .NET developer has faced the "Access Denied" error when trying to delete bin or obj folders. Wiper fixes this by:
+ * VS Interop: Automatically saves all files and closes Visual Studio gracefully.
+ * Zombie Hunting: Kills VBCSCompiler and MSBuild processes that frequently lock your files.
+ * Deep Cleaning: Targets bin, obj, .vs, and TestResults.
+ * Dual-Flavor: Use the CLI for speed or the WPF App for visual control and folder-by-folder selection.
+ * Safety First: Supports Dry Run mode to see exactly what will be deleted and how much space you'll save.
 
-* Scan a Visual Studio solution for `bin` and `obj` folders.
-* Only targets folders inside projects containing a `.csproj` file to prevent accidental deletion.
-* Delete selected folders safely with logging.
-* Save all files in the solution before cleaning.
-* Optionally restart Visual Studio after cleanup.
-* Real-time logging of operations in the UI.
-* Simple, user-friendly interface built with WPF.
+🛠 Installation
+Prerequisites
+ * Windows OS (for WPF and VS Interop)
+ * .NET 9.0 SDK
+ * Visual Studio 2022 (for automated rebuilding)
+Building from source
+git clone https://github.com/yourusername/wiper.git
+cd wiper
+dotnet build -c Release
 
-## Installation
+🖥 Usage
+1. Wiper CLI
+Perfect for quick runs or integration into your own scripts.
+# Perform a dry run (safe simulation)
+wiper "C:\Projects\MySolution.sln"
 
-1. Clone the repository:
+# Force the cleaning (closes VS and deletes files)
+wiper "C:\Projects\MySolution.sln" --force
 
-```bash
-git clone https://github.com/yourusername/Wiper.wpf.git
-```
+# Deep clean including .vs and TestResults
+wiper "C:\Projects\MySolution.sln" --force --all
 
-2. Open the solution in Visual Studio (requires Visual Studio 2022 or later).
-3. Build the solution using `Debug` or `Release` configuration.
-4. The executable will be available in the `bin\Debug\net9.0-windows` or `bin\Release\net9.0-windows` folder.
+CLI Arguments:
+| Argument | Description |
+| :--- | :--- |
+| --force | Executes the actual deletion. Without this, it stays in Dry Run mode. |
+| --all | Includes .vs and TestResults folders in the scan. |
+| -h, --help | Shows the help menu. |
+2. Wiper GUI (WPF)
+A modern interface for those who want granular control.
+ * Paste your Solution path or browse for it.
+ * Scan: See a breakdown of every bin/obj folder and how much disk space they occupy.
+ * Select: Uncheck specific projects you don't want to wipe.
+ * Execute: Watch the real-time log as Wiper orchestrates the Visual Studio cleanup.
 
-## Usage
+🏗 Architecture
+Wiper is built with a clean, modular architecture:
+ * Wiper.Core: The engine. Contains logic for file system scanning, ByteSize formatting, and the VisualStudioService that handles DTE automation.
+ * Wiper.Cli: A lightweight console interface for power users.
+ * Wiper.Wpf: A rich desktop client built using MVVM (via CommunityToolkit.Mvvm).
+The Clean Cycle
+ * DTE Hook: Connects to the running instance of the provided solution.
+ * Pre-Cleanup: Saves all documents and triggers a native Solution.Clean.
+ * Process Kill: Terminates ghost processes that hold file locks.
+ * Wipe: Recursively deletes target directories with retry logic.
+ * Restart: Re-opens the solution and triggers a Rebuild Solution.
 
-1. Open Wiper.exe.
-2. Enter the path to your `.sln` file in the “Solution Path” field.
-3. Click **Scan Folders** to list all `bin` and `obj` folders inside the solution.
-4. Select the folders you want to delete.
-5. Click **Run Clean & Restart** to:
+🤝 Contributing
+ * Fork the Project
+ * Create your Feature Branch (git checkout -b feature/AmazingFeature)
+ * Commit your Changes (git commit -m 'Add some AmazingFeature')
+ * Push to the Branch (git push origin feature/AmazingFeature)
+ * Open a Pull Request
 
-   * Save all files in Visual Studio.
-   * Delete selected folders.
-   * Restart Visual Studio automatically (optional).
-6. Monitor the process in the log panel.
-
-## Screenshot
-
-Here is a screenshot of Wiper in action:
-
-![Wiper Screenshot](Wiper.wpf/Resources/Assets/wiper-screenshot.png)
-
-## Safety
-
-* Only `bin` and `obj` folders are deleted.
-* Folders are verified to belong to a project containing a `.csproj` file.
-* User confirmation is required before deletion and restarting Visual Studio.
-
-## Contributing
-
-Contributions are welcome. Please open an issue or pull request with improvements, bug fixes, or suggestions.
-
-## Requirements
-
-* Windows 10 or later
-* .NET 9.0 (Windows)
-* Visual Studio 2022 or later (for interacting with DTE/solution cleanup)
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
+📄 License
+Distributed under the MIT License. See LICENSE for more information.
+Developed with ❤️ for the .NET Community.
+Would you like me to help you generate a LICENSE file or a .gitignore to go along with this?
+  
