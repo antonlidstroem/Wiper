@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Wiper.Core.Models;
 
@@ -7,6 +7,5 @@ public partial class FolderOption(string name, bool isChecked) : ObservableObjec
     public string Name { get; } = name;
     [ObservableProperty] private bool _isChecked = isChecked;
 }
-
 
 public record FolderSelectionChangedMessage();

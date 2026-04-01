@@ -1,12 +1,12 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Messaging;
 using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 using Wiper.Core.Models;
 using Wiper.Core.Services;
 
-namespace Wiper.wpf.ViewModels;
+namespace Wiper.WPF.ViewModels;
 
-public partial class FolderListViewModel : ObservableObject, IRecipient<FolderSelectionChangedMessage>
+public partial class FolderListViewModel : ObservableObject, IRecipient<FolderSelectionChangedMessage>, IDisposable
 {
     public ObservableCollection<ProjectFolder> Folders { get; } = [];
 
@@ -30,5 +30,10 @@ public partial class FolderListViewModel : ObservableObject, IRecipient<FolderSe
         Folders.Clear();
         foreach (var f in newFolders) Folders.Add(f);
         UpdateTotalSize();
+    }
+
+    public void Dispose()
+    {
+        WeakReferenceMessenger.Default.UnregisterAll(this);
     }
 }
