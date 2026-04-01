@@ -1,146 +1,186 @@
-﻿using System.Collections.ObjectModel;
 using System.IO;
-using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Wiper.wpf.Models;
-using Wiper.wpf.Services;
+using Wiper.Core.Interfaces;
+using Wiper.Core.Models;
+using Wiper.Core.Services;
+using Wiper.WPF.Services;
 
-namespace Wiper.wpf.ViewModels;
+namespace Wiper.WPF.ViewModels;
 
 public partial class MainViewModel : ObservableObject
 {
-    private readonly FileService _fileService = new();
-    private readonly VisualStudioService _vsService = new();
+    private readonly FileService        _fileService;
+    private readonly VisualStudioService _vsService;
+    private readonly IDialogService     _dialogService;
+    private readonly ISettingsService   _settingsService;
 
-    [ObservableProperty] private string _solutionPath = string.Empty;
-    [ObservableProperty] private bool _isBusy;
-    [ObservableProperty] private string _status = "Redo";
-    [ObservableProperty] private bool _isDryRun = true;
-    [ObservableProperty] private string _totalSizeDisplay = "0 B";
+    private CancellationTokenSource? _cts;
 
-    public ObservableCollection<FolderOption> FolderTypeOptions { get; } = new()
+    // ── Child ViewModels ──────────────────────────────────────────────────────
+    public ScanSettingsViewModel Settings  { get; }
+    public FolderListViewModel   FolderList { get; } = new();
+    public LogViewModel          LogVM      { get; } = new();
+
+    // ── Observerbart tillstånd ────────────────────────────────────────────────
+    [ObservableProperty] private bool   _isBusy;
+    [ObservableProperty] private string _status    = "Redo";
+    [ObservableProperty] private bool   _isDryRun  = true;
+    [ObservableProperty] private bool   _isDarkMode;
+    [ObservableProperty] private bool   _isDragOver;
+
+    [ObservableProperty,
+     NotifyPropertyChangedFor(nameof(IsScanning)),
+     NotifyPropertyChangedFor(nameof(IsLockChecking)),
+     NotifyPropertyChangedFor(nameof(IsCleaning)),
+     NotifyPropertyChangedFor(nameof(IsRestarting))]
+    private PipelineState _pipelineState = PipelineState.Idle;
+
+    // Bekvämlighetsegenskaper för pipeline-indikatorn i XAML
+    public bool IsScanning     => PipelineState == PipelineState.Scanning;
+    public bool IsLockChecking => PipelineState == PipelineState.LockCheck;
+    public bool IsCleaning     => PipelineState == PipelineState.Cleaning;
+    public bool IsRestarting   => PipelineState == PipelineState.Restarting;
+
+    public MainViewModel()
     {
-        new FolderOption("bin", true),
-        new FolderOption("obj", true),
-        new (".vs", false),
-        new ("TestResults", false)
-    };
+        _settingsService = App.SettingsService;
+        _fileService     = new FileService();
+        _vsService       = new VisualStudioService(_settingsService);
+        _dialogService   = new WpfDialogService();
 
-    public ObservableCollection<ProjectFolder> Folders { get; } = [];
-    public ObservableCollection<string> Logs { get; } = [];
+        Settings    = new ScanSettingsViewModel(_settingsService);
+        IsDryRun    = _settingsService.Settings.DefaultDryRun;
+        IsDarkMode  = _settingsService.Settings.DarkMode;
+    }
+
+    // ── Kommandon ─────────────────────────────────────────────────────────────
 
     [RelayCommand]
     private async Task ScanAsync()
     {
-        if (!File.Exists(SolutionPath)) return;
-        IsBusy = true;
-        Folders.Clear();
-
-        var targets = FolderTypeOptions.Where(o => o.IsChecked).Select(o => o.Name.ToLower()).ToList();
-        var result = await _fileService.ScanFoldersAsync(SolutionPath, targets);
-
-        foreach (var f in result)
+        if (!File.Exists(Settings.SolutionPath))
         {
-            f.PropertyChanged += (s, e) =>
-            {
-                if (e.PropertyName == nameof(ProjectFolder.IsSelected)) UpdateTotalSize();
-            };
-            Folders.Add(f);
+            Status = "Fel: Ogiltig sökväg till .sln-fil.";
+            return;
         }
 
-        UpdateTotalSize();
-        Status = $"Hittade {Folders.Count} mappar.";
-        IsBusy = false;
-    }
+        IsBusy        = true;
+        PipelineState = PipelineState.Scanning;
+        _cts          = new CancellationTokenSource();
 
-    private void UpdateTotalSize()
-    {
-        long total = Folders.Where(f => f.IsSelected).Sum(f => f.SizeInBytes);
-        TotalSizeDisplay = FormatSize(total);
-    }
+        try
+        {
+            LogVM.Log("[SCAN] Skannar lösning...");
+            var filters = Settings.GetSelectedFilters();
+            var result  = await _fileService.ScanFoldersAsync(
+                Settings.SolutionPath, filters, _cts.Token);
 
-    private string FormatSize(long bytes)
-    {
-        string[] Suffix = { "B", "KB", "MB", "GB", "TB" };
-        int i;
-        double dblSByte = bytes;
-        for (i = 0; i < Suffix.Length && bytes >= 1024; i++, bytes /= 1024) dblSByte = bytes / 1024.0;
-        return $"{dblSByte:0.##} {Suffix[i]}";
+            FolderList.Refresh(result);
+            Status        = $"Hittade {FolderList.Folders.Count} mappar · {FolderList.TotalSizeDisplay}";
+            PipelineState = PipelineState.Idle;
+            LogVM.Log($"[SCAN] Klar — {result.Count} mappar hittade.");
+
+            // Spara senaste sökväg
+            _settingsService.Settings.LastSolutionPath = Settings.SolutionPath;
+            await _settingsService.SaveAsync();
+        }
+        catch (OperationCanceledException)
+        {
+            PipelineState = PipelineState.Cancelled;
+            Status        = "Skanning avbruten.";
+        }
+        finally { IsBusy = false; }
     }
 
     [RelayCommand]
     private async Task CleanAsync()
     {
-        var selected = Folders.Where(f => f.IsSelected).ToList();
-        if (selected.Count == 0) return;
-
-        if (!IsDryRun)
+        var selected = FolderList.Folders.Where(f => f.IsSelected).ToList();
+        if (selected.Count == 0)
         {
-            var result = MessageBox.Show("Sekvens: Save -> Clean -> Close -> Delete -> Restart -> Rebuild.\nVill du köra?",
-                                       "Bekräfta total rensning", MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (result != MessageBoxResult.Yes) return;
+            Status = "Inga mappar valda.";
+            return;
         }
 
+        if (!IsDryRun && !_dialogService.Confirm(
+            $"Radera {selected.Count} mappar ({FolderList.TotalSizeDisplay})?\n\nDetta kan inte ångras.",
+            "Bekräfta rensning"))
+            return;
+
         IsBusy = true;
+        _cts   = new CancellationTokenSource();
+
         try
         {
-            if (!IsDryRun)
+            bool vsWasOpen = !IsDryRun && _vsService.IsSolutionOpen(Settings.SolutionPath);
+
+            // 2. LOCK CHECK ───────────────────────────────────────────────────
+            PipelineState = PipelineState.LockCheck;
+            LogVM.Log("[LOCK CHECK] Kontrollerar fillås...");
+            await Task.Delay(300, _cts.Token); // Platshållare tills LockService är implementerad
+
+            // 3. CLEAN ────────────────────────────────────────────────────────
+            PipelineState = PipelineState.Cleaning;
+
+            if (!IsDryRun && vsWasOpen)
             {
-                // STEG 1, 2 & 3: Save, Clean, Close
-                bool readyForDelete = await _vsService.SaveCleanAndCloseAsync(SolutionPath, Log);
-                if (!readyForDelete)
+                LogVM.Log("[CLEAN] Sparar och stänger Visual Studio...");
+                if (!await _vsService.SaveCleanAndCloseAsync(
+                    Settings.SolutionPath, LogVM.Log, _cts.Token))
                 {
-                    Log("AVBRUTET: VS kunde inte stängas säkert.");
+                    Status        = "Fel: Kunde inte stänga Visual Studio.";
+                    PipelineState = PipelineState.Error;
                     return;
                 }
             }
-
-            // STEG 4: Delete (Fysisk radering av mappar)
-            // Denna körs nu när VS är helt borta och inga filer är låsta
-            await _fileService.DeleteFoldersAsync(selected, Log, IsDryRun);
-
-            if (!IsDryRun)
+            else if (!IsDryRun && !vsWasOpen)
             {
-                // STEG 5 & 6: Restart & Rebuild
-                await _vsService.RestartAndRebuildAsync(SolutionPath, Log);
-                Status = "Fullständig cykel genomförd!";
+                LogVM.Log("[CLEAN] Visual Studio var inte öppen — hoppar över Save & Close.");
             }
+
+            await _fileService.DeleteFoldersAsync(selected, LogVM.Log, IsDryRun, _cts.Token);
+
+            // 4. RESTART ──────────────────────────────────────────────────────
+            if (!IsDryRun && vsWasOpen)
+            {
+                PipelineState = PipelineState.Restarting;
+                LogVM.Log("[RESTART] Startar om Visual Studio...");
+                await _vsService.RestartAndRebuildAsync(Settings.SolutionPath, LogVM.Log, _cts.Token);
+            }
+
+            PipelineState = PipelineState.Done;
+            Status        = IsDryRun ? "Simulering klar." : "Rensning klar!";
+            LogVM.Log($"[DONE] {(IsDryRun ? "Simulering" : "Rensning")} slutförd.");
         }
-        finally
+        catch (OperationCanceledException)
         {
-            IsBusy = false;
+            PipelineState = PipelineState.Cancelled;
+            Status        = "Avbruten.";
+            LogVM.Log("[AVBRUTEN] Körningen avbröts av användaren.");
         }
+        catch (Exception ex)
+        {
+            PipelineState = PipelineState.Error;
+            Status        = $"Fel: {ex.Message}";
+            LogVM.Log($"ERROR: {ex.Message}");
+        }
+        finally { IsBusy = false; }
     }
 
     [RelayCommand]
-    private void CopyLogs()
+    private void CancelOperation()
     {
-        if (Logs.Count == 0) return;
-
-        // Eftersom du gör Logs.Insert(0, ...) är loggen "bakvänd" (nyast först).
-        // Vi vänder på den här så att den kopierade texten blir i kronologisk ordning.
-        var fullLog = string.Join(Environment.NewLine, Logs.Reverse());
-
-        Clipboard.SetText(fullLog);
-        Log("System: Loggen har kopierats till urklipp.");
+        _cts?.Cancel();
+        LogVM.Log("Avbryter pågående operation...");
     }
 
     [RelayCommand]
-    private void ClearLogs()
+    private async Task ToggleThemeAsync()
     {
-        Logs.Clear();
-        Status = "Loggen rensad.";
-        Log("System: Loggen har nollställts.");
+        IsDarkMode = !IsDarkMode;
+        App.ApplyTheme(IsDarkMode);
+        _settingsService.Settings.DarkMode = IsDarkMode;
+        await _settingsService.SaveAsync();
     }
-
-    private void Log(string msg) =>
-        App.Current.Dispatcher.Invoke(() => Logs.Insert(0, $"[{DateTime.Now:HH:mm:ss}] {msg}"));
-}
-
-// Flyttad hit ner, men fortfarande i samma namespace
-public partial class FolderOption(string name, bool isChecked) : ObservableObject
-{
-    public string Name { get; } = name;
-    [ObservableProperty] private bool _isChecked = isChecked;
 }

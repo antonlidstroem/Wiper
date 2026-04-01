@@ -1,0 +1,39 @@
+using System.Collections.ObjectModel;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
+using Wiper.Core.Models;
+using Wiper.Core.Services;
+
+namespace Wiper.WPF.ViewModels;
+
+public partial class FolderListViewModel : ObservableObject, IRecipient<FolderSelectionChangedMessage>, IDisposable
+{
+    public ObservableCollection<ProjectFolder> Folders { get; } = [];
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(TotalSizeDisplay))]
+    private long _totalSizeInBytes;
+
+    public string TotalSizeDisplay => ByteSizeFormatter.FormatSize(TotalSizeInBytes);
+
+    public FolderListViewModel()
+    {
+        WeakReferenceMessenger.Default.Register(this);
+    }
+
+    public void Receive(FolderSelectionChangedMessage message) => UpdateTotalSize();
+
+    public void UpdateTotalSize() =>
+        TotalSizeInBytes = Folders.Where(f => f.IsSelected).Sum(f => f.SizeInBytes);
+
+    public void Refresh(IEnumerable<ProjectFolder> newFolders)
+    {
+        Folders.Clear();
+        foreach (var f in newFolders) Folders.Add(f);
+        UpdateTotalSize();
+    }
+
+    public void Dispose()
+    {
+        WeakReferenceMessenger.Default.UnregisterAll(this);
+    }
+}

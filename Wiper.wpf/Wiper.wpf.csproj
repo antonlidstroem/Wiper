@@ -1,42 +1,36 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Wiper.WPF</RootNamespace>
+    <ApplicationIcon>Resources\Assets\appicon.ico</ApplicationIcon>
+  </PropertyGroup>
 
-	<PropertyGroup>
-		<OutputType>WinExe</OutputType>
-		<TargetFramework>net9.0-windows</TargetFramework>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<UseWPF>true</UseWPF>
+  <ItemGroup>
+    <ProjectReference Include="..\Wiper.Core\Wiper.Core.csproj"/>
+  </ItemGroup>
 
-		<!-- Sätt exe/skrivbordsikon -->
-		<ApplicationIcon>Resources\Assets\appicon.ico</ApplicationIcon>
-	</PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2"/>
+  </ItemGroup>
 
-	<ItemGroup>
-	  <Compile Remove="Assets\**" />
-	  <EmbeddedResource Remove="Assets\**" />
-	  <None Remove="Assets\**" />
-	  <Page Remove="Assets\**" />
-	</ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Assets\**"/>
+    <EmbeddedResource Remove="Assets\**"/>
+    <None Remove="Assets\**"/>
+    <Page Remove="Assets\**"/>
+  </ItemGroup>
 
-	<!-- Paketreferenser -->
-	<ItemGroup>
-		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
-		<PackageReference Include="Microsoft.VisualStudio.Interop" Version="17.9.37000" />
-	</ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Assets\appicon.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Resource>
+    <Resource Include="Resources\Images\wiper-logo.png"/>
+    <Resource Include="Resources\Images\wiper-white.png"/>
+  </ItemGroup>
 
-	<!-- PNG-bilder som används i UI -->
-	<ItemGroup>
-		<Resource Include="Resources\Assets\appicon.ico">
-		  <CopyToOutputDirectory>Never</CopyToOutputDirectory>
-		</Resource>
-		<Resource Include="Resources\Images\wiper-logo.png" />
-	</ItemGroup>
-
-	<!-- Mappen för ikonen -->
-
-	<!-- Valfritt: andra resurser -->
-	<ItemGroup>
-		<Folder Include="Resources\Images\" />
-	</ItemGroup>
 
 </Project>

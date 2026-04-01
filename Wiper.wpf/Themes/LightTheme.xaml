@@ -1,0 +1,118 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ── Bakgrunder ─────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="AppBackground"      Color="#F0F2F5"/>
+    <SolidColorBrush x:Key="SurfaceBackground"  Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="LogBackground"      Color="#1A1A2E"/>
+    <SolidColorBrush x:Key="DropZoneBackground" Color="#EEF4FF"/>
+    <SolidColorBrush x:Key="DropZoneBorder"     Color="#ADC6FF"/>
+
+    <!-- ── Text ────────────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="TextPrimary"        Color="#1A1A2E"/>
+    <SolidColorBrush x:Key="TextSecondary"      Color="#6B7280"/>
+    <SolidColorBrush x:Key="HintForeground"     Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="LogForeground"      Color="#4ADE80"/>
+    <SolidColorBrush x:Key="AccentBlue"         Color="#2563EB"/>
+    <SolidColorBrush x:Key="AccentBlueDark"     Color="#1D4ED8"/>
+
+    <!-- ── Pipeline-steg ───────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="PipelineIdle"       Color="#9CA3AF"/>
+    <SolidColorBrush x:Key="PipelineActive"     Color="#2563EB"/>
+    <SolidColorBrush x:Key="PipelineDone"       Color="#16A34A"/>
+    <SolidColorBrush x:Key="PipelineError"      Color="#DC2626"/>
+
+    <!-- ── Border ──────────────────────────────────────────────────────────── -->
+    <SolidColorBrush x:Key="BorderLight"        Color="#E5E7EB"/>
+    <SolidColorBrush x:Key="BorderMedium"       Color="#D1D5DB"/>
+
+    <!-- ── Knappar ─────────────────────────────────────────────────────────── -->
+    <Style x:Key="PrimaryButton" TargetType="Button">
+        <Setter Property="Background"   Value="#2563EB"/>
+        <Setter Property="Foreground"   Value="White"/>
+        <Setter Property="FontWeight"   Value="SemiBold"/>
+        <Setter Property="Padding"      Value="16,8"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Cursor"       Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#1D4ED8"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter Property="Background" Value="#9CA3AF"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="SecondaryButton" TargetType="Button">
+        <Setter Property="Background"      Value="Transparent"/>
+        <Setter Property="Foreground"      Value="{StaticResource TextSecondary}"/>
+        <Setter Property="BorderBrush"     Value="{StaticResource BorderMedium}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="Padding"         Value="12,6"/>
+        <Setter Property="Cursor"          Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            CornerRadius="6"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="#F3F4F6"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- ── TextBox ─────────────────────────────────────────────────────────── -->
+    <Style x:Key="ModernTextBox" TargetType="TextBox">
+        <Setter Property="Background"        Value="{StaticResource SurfaceBackground}"/>
+        <Setter Property="Foreground"        Value="{StaticResource TextPrimary}"/>
+        <Setter Property="BorderBrush"       Value="{StaticResource BorderMedium}"/>
+        <Setter Property="BorderThickness"   Value="1"/>
+        <Setter Property="Padding"           Value="10,8"/>
+        <Setter Property="FontSize"          Value="13"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+        <Style.Triggers>
+            <Trigger Property="IsFocused" Value="True">
+                <Setter Property="BorderBrush" Value="#2563EB"/>
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+    <!-- ── Surface-kort ────────────────────────────────────────────────────── -->
+    <Style x:Key="SurfaceCard" TargetType="Border">
+        <Setter Property="Background"      Value="{StaticResource SurfaceBackground}"/>
+        <Setter Property="BorderBrush"     Value="{StaticResource BorderLight}"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="CornerRadius"    Value="8"/>
+        <Setter Property="Padding"         Value="16"/>
+        <Setter Property="Margin"          Value="0,0,0,10"/>
+    </Style>
+
+    <!-- ── Label ───────────────────────────────────────────────────────────── -->
+    <Style x:Key="LabelStyle" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource TextSecondary}"/>
+        <Setter Property="FontSize"   Value="12"/>
+        <Setter Property="Margin"     Value="0,0,0,4"/>
+    </Style>
+
+</ResourceDictionary>
