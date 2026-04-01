@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="Wiper.Cli/Wiper.Cli.csproj" Id="9e34cbbf-1456-4fd3-b6e8-516003a55c62" />
-  <Project Path="Wiper.Core/Wiper.Core.csproj" Id="000ebe7f-594a-4d16-9130-5968ced2ed5e" />
-  <Project Path="Wiper.wpf/Wiper.wpf.csproj" />
-</Solution>

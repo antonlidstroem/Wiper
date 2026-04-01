@@ -1,4 +1,4 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Messaging;
 
 namespace Wiper.Core.Models;
@@ -13,11 +13,8 @@ public partial class ProjectFolder : ObservableObject
 
     [ObservableProperty] private bool _isSelected = true;
 
-  
     partial void OnIsSelectedChanged(bool value)
     {
         WeakReferenceMessenger.Default.Send(new FolderSelectionChangedMessage());
     }
 }
-
-
