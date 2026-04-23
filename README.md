@@ -1,10 +1,10 @@
 <img src="Wiper.wpf/Resources/Images/wiper-logo.png" alt="Wiper logo" width="200">
 
-Wiper
+# Wiper
 Wiper is a comprehensive cleanup utility for .NET developers. It is designed to handle the common frustrations of cleaning build artifacts by integrating directly with Visual Studio to manage file locks, save pending changes, and automatically rebuild solutions after a deep clean.
 The project consists of a modern WPF desktop application and a lightweight CLI tool.
 
-Key Features
+# Key Features
  * Visual Studio Integration: Automatically detects open instances, saves work, and closes the application to release file locks.
  * Deep Clean: Targets standard directories like bin, obj, .vs, and TestResults, with support for custom folders such as node_modules.
  * Ghost Process Termination: Kills background processes (e.g., VBCSCompiler, MSBuild, or vbc) that often prevent folder deletion.
@@ -12,7 +12,7 @@ Key Features
  * Auto-Restart & Rebuild: Optionally reopens Visual Studio and triggers a fresh build once the workspace has been wiped.
  * Modern UI/UX: Features a clean WPF interface with dark mode support and real-time logging.
    
-WPF Application
+# WPF Application
 The WPF version offers a visual pipeline to track the progress of the cleanup operation.
 Usage
  * Selection: Enter the path to a .sln or .slnx file or use the file browser.
@@ -23,7 +23,7 @@ Usage
 ![Screenshot](Wiper.wpf/Resources/Assets/screenshot1.png)
 
 
-CLI Tool
+# CLI Tool
 The CLI version is optimized for power users and automation scripts.
 
 Basic Commands
