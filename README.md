@@ -1,4 +1,3 @@
-![Wiper logo](Wiper.wpf/Resources/Images/wiper-logo.png)
 <img src="Wiper.wpf/Resources/Images/wiper-logo.png" alt="Wiper logo" width="200">
 
 Wiper
@@ -21,6 +20,9 @@ Usage
  * Filter: Toggle specific folder types (e.g., .vs) or add custom directory names.
  * Clean: Execute the cleanup. Use the "Dry Run" toggle to simulate the process without deleting files.
    
+![Screenshot](Wiper.wpf/Resources/Assets/screenshot1.png)
+
+
 CLI Tool
 The CLI version is optimized for power users and automation scripts.
 
