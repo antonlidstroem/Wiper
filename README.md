@@ -1,4 +1,5 @@
 ![Wiper logo](Wiper.wpf/Resources/Images/wiper-logo.png)
+<img src="Wiper.wpf/Resources/Images/wiper-logo.png" alt="Wiper logo" width="200">
 
 Wiper
 Wiper is a comprehensive cleanup utility for .NET developers. It is designed to handle the common frustrations of cleaning build artifacts by integrating directly with Visual Studio to manage file locks, save pending changes, and automatically rebuild solutions after a deep clean.
